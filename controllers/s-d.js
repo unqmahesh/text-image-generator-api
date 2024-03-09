@@ -1,5 +1,6 @@
 import axios from 'axios'
-import { response } from 'express'
+
+import keywordsExtractor from '../utils/keywords-extractor.js'
 
 const sdImgGen = async(req, res, next) => {
 
@@ -10,7 +11,7 @@ const sdImgGen = async(req, res, next) => {
 
         const {prompt, engineId, cfg_scale, height, width, steps, samples} = req.body
 
-        const reqUrl =  `${SD_URL}/v1/generation/${engineId}/text-to-image`
+        const reqUrl =  `${SD_URL}/v1/generation/${engineId || "stable-diffusion-xl-1024-v1-0"}/text-to-image`
 
         const reqBody = {
             'text_prompts' : [{'text' : prompt}],
@@ -30,7 +31,9 @@ const sdImgGen = async(req, res, next) => {
         const response = await axios.post(reqUrl, reqBody, {headers:reqHeader})
         const base64Img = response.data.artifacts[0].base64
 
-        res.status(200).json({success: true, data : {base64Img}})
+        const keyWords = await keywordsExtractor(prompt, next)
+
+        res.status(200).json({success: true, data : {base64Img, keyWords}})
     }
     catch(error){
         const err = new Error()
